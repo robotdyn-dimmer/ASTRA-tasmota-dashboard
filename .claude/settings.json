@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "defaultMode": "dontAsk",
+    "allow": [
+      "Bash(*)",
+      "Edit",
+      "Write",
+      "Read",
+      "Glob",
+      "Grep",
+      "Agent"
+    ],
+    "additionalDirectories": [
+      "/c/Users/shavk/Documents/My Drive/TASMOTA/Tasmota-development",
+      "/c/Users/shavk/Documents/My Drive/TASMOTA/Tasmota-development/.doc_for_ai"
+    ]
+  }
+}
