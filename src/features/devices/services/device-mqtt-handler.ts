@@ -4,6 +4,7 @@ import { parseTopic } from '@/lib/tasmota-topic-utils'
 import { useDeviceStore } from '@/features/devices/store/device-store'
 import { parseStatus0 } from '@/shared/utils/tasmota-parsers'
 import { buildWildcardSubscriptions, buildCommandTopic } from '@/lib/tasmota-topic-utils'
+import { ruleEngine } from '@/features/rules/engine/rule-engine'
 import type { MqttMessage } from '@/core/mqtt/types'
 
 let unsubscribes: Array<() => void> = []
@@ -20,7 +21,7 @@ function processMessage(message: MqttMessage): void {
   try {
     payload = JSON.parse(message.payload)
   } catch {
-    // LWT messages are plain strings like "Online" / "Offline"
+    // LWT messages are plain strings: "Online" / "Offline"
     if (suffix === 'LWT') {
       const online = message.payload === 'Online'
       const existingDevice = store.getDeviceByTopic(deviceTopic)
@@ -28,14 +29,14 @@ function processMessage(message: MqttMessage): void {
       if (existingDevice) {
         store.setOnlineStatus(deviceTopic, online)
       } else if (online) {
-        // Auto-discovery: create provisional device
+        // Auto-discovery: create provisional device, then request full status
         store.addDevice({
-          mqttTopic: deviceTopic,
-          friendlyName: deviceTopic,
-          addedVia: 'mqtt-discovery',
+          mqttTopic:    deviceTopic,
+          friendlyName: deviceTopic,   // will be overwritten by INFO1 / STATUS response
+          addedVia:     'mqtt-discovery',
         })
         store.setOnlineStatus(deviceTopic, true)
-        // Request full status
+        // Ask device for full status — response arrives on stat/<topic>/STATUS0
         mqttClient.publish(buildCommandTopic(deviceTopic, 'STATUS'), '0')
       }
       return
@@ -43,30 +44,86 @@ function processMessage(message: MqttMessage): void {
     return
   }
 
-  // Route by topic prefix and suffix
+  // ── Route by prefix / suffix ──────────────────────────────────────────────
+
   if (prefix === 'tele') {
-    if (suffix === 'SENSOR') {
+
+    if (suffix === 'SENSOR' || suffix === 'STATE') {
+      const device    = store.getDeviceByTopic(deviceTopic)
+      const prevState = device ? store.deviceStates[device.id] : undefined
       store.handleTelemetry(deviceTopic, payload)
-    } else if (suffix === 'STATE') {
-      store.handleTelemetry(deviceTopic, payload)
-    }
-  } else if (prefix === 'stat') {
-    if (suffix === 'RESULT') {
-      store.handleStatResult(deviceTopic, payload)
-    } else if (suffix === 'STATUS0') {
-      // Full status response — update device info + state
-      const parsed = parseStatus0(payload)
+      if (device) {
+        const newState = store.deviceStates[device.id]
+        if (newState) ruleEngine.onDeviceUpdate(device.id, newState, prevState)
+      }
+
+    } else if (suffix === 'INFO1') {
+      // Published on startup — contains FriendlyName (and module/version)
+      // {"Info1":{"Module":"Generic","Version":"13.4.0","FriendlyName":["Kitchen Light"],...}}
       const device = store.getDeviceByTopic(deviceTopic)
       if (device) {
-        const { friendlyName, ipAddress, macAddress, firmwareVersion, hardware, module, ...stateUpdates } = parsed
+        const info = (payload.Info1 ?? payload) as Record<string, unknown>
+        const raw  = info.FriendlyName
+        const friendlyName = Array.isArray(raw)
+          ? (raw[0] as string)
+          : (typeof raw === 'string' ? raw : undefined)
+        if (friendlyName && friendlyName !== device.friendlyName) {
+          store.updateDevice(device.id, { friendlyName })
+        }
+      }
+
+    } else if (suffix === 'INFO2') {
+      // Published on startup — contains Hostname + IPAddress
+      // {"Info2":{"WebServerMode":"Admin","Hostname":"tasmota-XXXX","IPAddress":"192.168.1.100"}}
+      const device = store.getDeviceByTopic(deviceTopic)
+      if (device) {
+        const info      = (payload.Info2 ?? payload) as Record<string, unknown>
+        const ipAddress = typeof info.IPAddress === 'string' ? info.IPAddress : undefined
+        if (ipAddress && ipAddress !== device.ipAddress) {
+          store.updateDevice(device.id, { ipAddress })
+        }
+      }
+    }
+
+  } else if (prefix === 'stat') {
+
+    if (suffix === 'RESULT') {
+      // Immediate command response — relay toggle result, etc.
+      store.handleStatResult(deviceTopic, payload)
+
+    } else if (suffix === 'STATUS') {
+      // Response to STATUS (section 1 only) — contains FriendlyName
+      // {"Status":{"Module":0,"FriendlyName":["Kitchen Light"],"Topic":"tasmota_ABC",...}}
+      const device = store.getDeviceByTopic(deviceTopic)
+      if (device) {
+        const status = (payload.Status ?? payload) as Record<string, unknown>
+        const raw    = status.FriendlyName
+        const friendlyName = Array.isArray(raw)
+          ? (raw[0] as string)
+          : (typeof raw === 'string' ? raw : undefined)
+        if (friendlyName && friendlyName !== device.friendlyName) {
+          store.updateDevice(device.id, { friendlyName })
+        }
+      }
+
+    } else if (suffix === 'STATUS0') {
+      // Full status response (all sections combined) — from STATUS 0 command
+      const parsedStatus = parseStatus0(payload)
+      const device = store.getDeviceByTopic(deviceTopic)
+      if (device) {
+        const {
+          friendlyName, ipAddress, macAddress,
+          firmwareVersion, hardware, module: mod,
+          ...stateUpdates
+        } = parsedStatus
         if (friendlyName || ipAddress || firmwareVersion) {
           store.updateDevice(device.id, {
-            ...(friendlyName && { friendlyName }),
-            ...(ipAddress && { ipAddress }),
-            ...(macAddress && { macAddress }),
+            ...(friendlyName    && { friendlyName }),
+            ...(ipAddress       && { ipAddress }),
+            ...(macAddress      && { macAddress }),
             ...(firmwareVersion && { firmwareVersion }),
-            ...(hardware && { hardware }),
-            ...(module && { module }),
+            ...(hardware        && { hardware }),
+            ...(mod             && { module: mod }),
           })
         }
         store.updateDeviceState(device.id, {
@@ -91,9 +148,9 @@ export function startDeviceMqttHandler(): void {
   const topics = buildWildcardSubscriptions()
   unsubscribes = topics.map(topic =>
     mqttClient.subscribe(topic, (msg) => {
-      // LWT messages are processed immediately (not buffered)
-      const parsed = parseTopic(msg.topic)
-      if (parsed?.suffix === 'LWT') {
+      // LWT processed immediately (online/offline is time-critical)
+      const p = parseTopic(msg.topic)
+      if (p?.suffix === 'LWT') {
         processMessage(msg)
       } else {
         messageBuffer?.push(msg)

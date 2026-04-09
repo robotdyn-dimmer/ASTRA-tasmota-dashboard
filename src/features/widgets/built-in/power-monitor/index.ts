@@ -11,7 +11,10 @@ widgetRegistry.register({
   configSchema: {
     type: 'object',
     properties: {
-      showChart: { type: 'boolean', title: 'Show chart', default: true },
+      showChart:   { type: 'boolean', title: 'Show live chart', default: true },
+      chartMetric: { type: 'string',  title: 'Chart metric (power / voltage / current)', default: 'power' },
+      showTotals:  { type: 'boolean', title: 'Show today / total kWh', default: true },
+      maxPoints:   { type: 'number',  title: 'Chart history points', default: 60 },
     },
   },
   component: lazy(() => import('./PowerMonitorWidget')),

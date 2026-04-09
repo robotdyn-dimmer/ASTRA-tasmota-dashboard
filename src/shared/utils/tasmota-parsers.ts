@@ -79,6 +79,9 @@ export function parseStatus0(payload: Record<string, unknown>): Partial<TasmotaD
   if (status) {
     const friendlyNames = status.FriendlyName as string[] | undefined
     result.friendlyName = String(friendlyNames?.[0] ?? status.DeviceName ?? '')
+    if (Array.isArray(friendlyNames) && friendlyNames.length > 1) {
+      result.friendlyNames = friendlyNames
+    }
     result.module = String(status.Module ?? '')
     result.power = parsePowerState(status)
   }
@@ -101,12 +104,62 @@ export function parseStatus0(payload: Record<string, unknown>): Partial<TasmotaD
     result.loadAvg = Number(statusSTS.LoadAvg ?? 0)
     result.wifi = parseWifiInfo(statusSTS)
     Object.assign(result.power ??= {}, parsePowerState(statusSTS))
+
+    // PWM state: { PWM: { PWM1: 512, PWM2: 0 } } or flat { PWM1: 512 }
+    const pwmData = statusSTS.PWM as Record<string, unknown> | undefined
+    if (pwmData && typeof pwmData === 'object') {
+      const pwm: Record<string, number> = {}
+      for (const [k, v] of Object.entries(pwmData)) {
+        if (/^PWM\d+$/i.test(k)) pwm[k.toUpperCase()] = Number(v)
+      }
+      if (Object.keys(pwm).length > 0) result.pwm = pwm
+    }
+
+    // Switch state from StatusSTS
+    const switches: Record<string, boolean> = {}
+    for (const [k, v] of Object.entries(statusSTS)) {
+      if (/^Switch\d+$/i.test(k)) {
+        switches[k.toUpperCase()] = v === 'ON' || v === 1 || v === true
+      }
+    }
+    if (Object.keys(switches).length > 0) result.switches = switches
+
+    // LedPower state from StatusSTS: { LedPower1: "ON" }
+    const leds: Record<string, boolean> = {}
+    for (const [k, v] of Object.entries(statusSTS)) {
+      if (/^LedPower\d*$/i.test(k)) {
+        const key = k.charAt(0).toUpperCase() + k.slice(1).replace(/power/i, 'Power')
+        leds[key.match(/\d/) ? key : key + '1'] = v === 'ON' || v === 1 || v === true
+      }
+    }
+    if (Object.keys(leds).length > 0) result.leds = leds
   }
 
   const statusSNS = payload.StatusSNS as Record<string, unknown> | undefined
   if (statusSNS) {
     result.sensors = parseSensorPayload(statusSNS)
     result.energy = parseEnergyPayload(statusSNS)
+
+    // Counter state: { COUNTER: { C1: 1234, C2: 0 } }
+    const counterData = statusSNS.COUNTER as Record<string, unknown> | undefined
+    if (counterData && typeof counterData === 'object') {
+      const counters: Record<string, number> = {}
+      for (const [k, v] of Object.entries(counterData)) {
+        const m = k.match(/^C(\d+)$/)
+        if (m) counters[`COUNTER${m[1]}`] = Number(v)
+      }
+      if (Object.keys(counters).length > 0) result.counters = counters
+    }
+
+    // ADC state: { ANALOG: { A0: 523 } } or { ANALOG: { Temperature: 25.3 } }
+    const analogData = statusSNS.ANALOG as Record<string, unknown> | undefined
+    if (analogData && typeof analogData === 'object') {
+      const adc: Record<string, number> = {}
+      for (const [k, v] of Object.entries(analogData)) {
+        adc[`ADC.${k}`] = Number(v)
+      }
+      if (Object.keys(adc).length > 0) result.adc = adc
+    }
   }
 
   return result

@@ -11,7 +11,11 @@ widgetRegistry.register({
   configSchema: {
     type: 'object',
     properties: {
-      sensorKey: { type: 'string', title: 'Filter by sensor key', default: '' },
+      sensorKey:     { type: 'string',  title: 'Filter by sensor key (e.g. AM2301)', default: '' },
+      maxSensors:    { type: 'number',  title: 'Max sensors to show', default: 6 },
+      decimalPlaces: { type: 'number',  title: 'Decimal places (0-2)', default: 1 },
+      showUnits:     { type: 'boolean', title: 'Show unit labels', default: true },
+      listLayout:    { type: 'boolean', title: 'List layout (instead of grid)', default: false },
     },
   },
   component: lazy(() => import('./SensorDisplayWidget')),

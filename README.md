@@ -1,73 +1,71 @@
-# React + TypeScript + Vite
+# ASTRA — Admin System for Tasmota Remote Access
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Browser-based admin panel for Tasmota ESP32 devices
 
-Currently, two official plugins are available:
+![Status](https://img.shields.io/badge/status-v0.1.0--dev-orange) ![ESP32](https://img.shields.io/badge/platform-ESP32-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Website:** [www.rocketcontroller.com](https://www.rocketcontroller.com)
 
-## React Compiler
+![Dashboard](docs/screenshots/dashboard.png)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+- Dashboard with customizable drag-and-drop widgets
+- Device management with online/offline monitoring
+- Relay / PWM / LED / Sensor / Energy monitoring and control
+- Visual Rule Builder with templates
+- Timer management (16 slots per device)
+- GPIO entity mapping
+- Config sync to device (Berry-based storage on ESP32)
+- Dark mode
+- PWA support (installable, works offline)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Quick Start
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Node.js 18+**
+- **ESP32** with **Tasmota 14+** on the same network
+- CORS enabled on device (`SetOption120 1`) — see [CORS setup](docs/CORS-setup.md)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+> **ESP32 only.** ESP8266 is not supported — Berry scripting (used for SSE push and config storage) is not available on ESP8266.
+
+### Install and Run
+
+```bash
+git clone https://github.com/robotdyn-dimmer/ASTRA-tasmota-dashboard.git
+cd ASTRA-tasmota-dashboard
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open `http://localhost:5173` in your browser. The onboarding page will prompt you to enter your first device IP.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Production Build
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
+npm run preview
 ```
+
+## Documentation
+
+Full documentation is in the [`docs/`](docs/) folder:
+
+- [User Guide](docs/user-guide.md) — complete walkthrough of all features
+- [CORS Setup](docs/CORS-setup.md) — browser security configuration
+- [Berry Setup](docs/berry-setup.md) — SSE push and config storage scripts for ESP32
+
+## Tech Stack
+
+React 19 + TypeScript + Vite + Tailwind CSS v4 + shadcn/ui + Zustand + Recharts + react-grid-layout
+
+Communication: HTTP (primary) + MQTT (optional) + SSE (real-time push via Berry)
+
+## License
+
+MIT (TBD)
+
+---
+
+Built by the **RocketController** team

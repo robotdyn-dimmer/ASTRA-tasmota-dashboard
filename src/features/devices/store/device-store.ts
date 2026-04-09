@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { deviceIdFromTopic } from '@/lib/tasmota-topic-utils'
 import { parsePowerState, parseSensorPayload, parseEnergyPayload, parseWifiInfo } from '@/shared/utils/tasmota-parsers'
+import { sensorHistoryDB } from '@/core/history/sensor-history-db'
 import type { DeviceState, DeviceStoreState } from './device-store.types'
 
 const createEmptyState = (): DeviceState => ({
@@ -79,12 +80,35 @@ export const useDeviceStore = create<DeviceStoreState>()(
         if (!device) return
 
         const currentState = get().deviceStates[device.id] ?? createEmptyState()
-        const sensors = { ...currentState.sensors, ...parseSensorPayload(payload) }
+        const newSensors = parseSensorPayload(payload)
+        const sensors = { ...currentState.sensors, ...newSensors }
         const energy = parseEnergyPayload(payload) ?? currentState.energy
         const wifi = parseWifiInfo(payload) ?? currentState.wifi
         const power = { ...currentState.power, ...parsePowerState(payload) }
         const uptime = typeof payload.Uptime === 'string' ? payload.Uptime : currentState.uptime
         const loadAvg = typeof payload.LoadAvg === 'number' ? payload.LoadAvg : currentState.loadAvg
+        const now = Date.now()
+
+        // Persist numeric sensor readings to IndexedDB for history graphs
+        const historyReadings = Object.entries(newSensors)
+          .filter(([, r]) => typeof r.value === 'number')
+          .map(([key, r]) => ({
+            deviceId:  device.id,
+            sensorKey: key,
+            timestamp: now,
+            value:     r.value as number,
+          }))
+        if (historyReadings.length > 0) {
+          sensorHistoryDB.addReadings(historyReadings).catch(console.error)
+        }
+
+        // Also persist energy power to history
+        if (energy && typeof energy.power === 'number') {
+          sensorHistoryDB.addReading({
+            deviceId: device.id, sensorKey: 'ENERGY.Power',
+            timestamp: now, value: energy.power,
+          }).catch(console.error)
+        }
 
         set((state) => ({
           deviceStates: {
@@ -92,7 +116,7 @@ export const useDeviceStore = create<DeviceStoreState>()(
             [device.id]: {
               ...currentState,
               online: true,
-              lastSeen: Date.now(),
+              lastSeen: now,
               power,
               sensors,
               energy,
@@ -127,6 +151,19 @@ export const useDeviceStore = create<DeviceStoreState>()(
       getDeviceByTopic: (mqttTopic) => {
         const devices = get().devices
         return Object.values(devices).find(d => d.mqttTopic === mqttTopic)
+      },
+
+      mergeDevicesFromDevice: (remoteDevices) => {
+        set((state) => {
+          const merged = { ...state.devices }
+          const mergedStates = { ...state.deviceStates }
+          for (const [id, remote] of Object.entries(remoteDevices)) {
+            // Add missing devices, update existing with remote fields
+            merged[id] = { ...remote, ...merged[id], ...remote }
+            if (!mergedStates[id]) mergedStates[id] = createEmptyState()
+          }
+          return { devices: merged, deviceStates: mergedStates }
+        })
       },
     }),
     {

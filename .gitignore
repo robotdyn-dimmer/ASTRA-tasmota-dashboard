@@ -23,3 +23,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Dev/debug artifacts
+diag-*.mjs
+cdp-*.mjs
+take-screenshots.mjs
+test-screenshots*/
+docs-dev/
+mock-server/
+*.claude*
+.claude/

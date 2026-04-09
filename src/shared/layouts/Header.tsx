@@ -1,6 +1,10 @@
-import { Wifi, WifiOff, Plus, Menu } from 'lucide-react'
+import { Wifi, WifiOff, Plus, Menu, Sun, Moon, Download } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { useSettingsStore } from '@/features/settings/store/settings-store'
+import { useInstallPrompt } from '@/core/pwa/useInstallPrompt'
 import type { ConnectionState } from '@/core/mqtt/types'
-import { cn } from '@/shared/utils/cn'
 
 interface HeaderProps {
   mqttStatus: ConnectionState
@@ -8,44 +12,65 @@ interface HeaderProps {
   onToggleSidebar: () => void
 }
 
-const statusConfig: Record<ConnectionState, { color: string; label: string; Icon: typeof Wifi }> = {
-  connected: { color: 'bg-success', label: 'MQTT Connected', Icon: Wifi },
-  connecting: { color: 'bg-warning animate-pulse', label: 'Connecting...', Icon: Wifi },
-  disconnected: { color: 'bg-danger', label: 'Disconnected', Icon: WifiOff },
-  error: { color: 'bg-danger', label: 'MQTT Error', Icon: WifiOff },
+const statusConfig: Record<ConnectionState, { label: string; Icon: typeof Wifi; className: string }> = {
+  connected: { label: 'MQTT Connected', Icon: Wifi, className: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' },
+  connecting: { label: 'Connecting...', Icon: Wifi, className: 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400' },
+  disconnected: { label: 'Disconnected', Icon: WifiOff, className: 'bg-muted border-border text-muted-foreground' },
+  error: { label: 'MQTT Error', Icon: WifiOff, className: 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400' },
 }
 
 export function Header({ mqttStatus, onAddDevice, onToggleSidebar }: HeaderProps) {
+  const { theme, setTheme } = useSettingsStore()
+  const { canInstall, install } = useInstallPrompt()
   const status = statusConfig[mqttStatus]
 
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    document.documentElement.classList.toggle('dark', next === 'dark')
+  }
+
   return (
-    <header className="h-[var(--spacing-header)] bg-surface border-b border-border flex items-center justify-between px-4 shrink-0">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onToggleSidebar}
-          className="p-2 rounded-md hover:bg-surface-hover text-text-muted hover:text-text transition-colors lg:hidden"
-        >
+    <header className="h-[var(--spacing-header)] bg-card border-b border-border/60 flex items-center justify-between px-4 shrink-0 gap-3 shadow-sm">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="lg:hidden shrink-0">
           <Menu size={20} />
-        </button>
-        <h1 className="text-lg font-semibold text-text tracking-tight">
-          TASMOTA<span className="text-primary">Admin</span>
-        </h1>
+        </Button>
+        <div className="whitespace-nowrap">
+          <h1 className="text-base font-semibold tracking-tight leading-tight">ASTRA</h1>
+          <p className="text-[10px] text-muted-foreground/60 leading-none -mt-0.5">Tasmota dashboard</p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-sm text-text-muted">
-          <div className={cn('w-2 h-2 rounded-full', status.color)} />
-          <status.Icon size={16} />
-          <span className="hidden sm:inline">{status.label}</span>
-        </div>
+      <div className="flex items-center gap-2 ml-auto">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="outline" className={`gap-1.5 hidden sm:flex cursor-default ${status.className}`}>
+              <status.Icon size={12} />
+              <span className="text-xs">{status.label}</span>
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-64 text-xs">
+            {mqttStatus === 'connected'
+              ? 'MQTT provides instant updates. Devices push state changes in real-time.'
+              : 'Without MQTT, devices are polled via HTTP every 30s. Configure a broker in Settings for instant updates.'}
+          </TooltipContent>
+        </Tooltip>
 
-        <button
-          onClick={onAddDevice}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium rounded-md transition-colors"
-        >
-          <Plus size={16} />
+        {canInstall && (
+          <Button variant="ghost" size="icon" onClick={install} title="Install app">
+            <Download size={18} />
+          </Button>
+        )}
+
+        <Button variant="ghost" size="icon" onClick={toggleTheme} title="Toggle theme">
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </Button>
+
+        <Button size="sm" onClick={onAddDevice} className="gap-1.5 shrink-0">
+          <Plus size={15} />
           <span className="hidden sm:inline">Add Device</span>
-        </button>
+        </Button>
       </div>
     </header>
   )

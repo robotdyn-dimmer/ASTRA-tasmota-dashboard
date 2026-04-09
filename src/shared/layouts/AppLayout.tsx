@@ -6,22 +6,12 @@ import type { ConnectionState } from '@/core/mqtt/types'
 interface AppLayoutProps {
   children: ReactNode
   mqttStatus: ConnectionState
-  activePage: string
-  onNavigate: (page: string) => void
   onAddDevice: () => void
   deviceCount: number
   onlineCount: number
 }
 
-export function AppLayout({
-  children,
-  mqttStatus,
-  activePage,
-  onNavigate,
-  onAddDevice,
-  deviceCount,
-  onlineCount,
-}: AppLayoutProps) {
+export function AppLayout({ children, mqttStatus, onAddDevice, deviceCount, onlineCount }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -29,8 +19,6 @@ export function AppLayout({
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        activePage={activePage}
-        onNavigate={onNavigate}
         deviceCount={deviceCount}
         onlineCount={onlineCount}
       />
@@ -42,7 +30,7 @@ export function AppLayout({
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
 
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-auto p-6 lg:p-8">
           {children}
         </main>
       </div>

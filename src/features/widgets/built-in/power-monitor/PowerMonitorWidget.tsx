@@ -4,74 +4,112 @@ import type { WidgetProps } from '@/features/widgets/registry/widget-types'
 import { Zap } from 'lucide-react'
 
 interface DataPoint {
-  time: string
-  power: number
+  time:    string
+  power:   number
   voltage: number
   current: number
 }
 
-const MAX_POINTS = 60
+interface PowerConfig {
+  showChart?:   boolean
+  chartMetric?: 'power' | 'voltage' | 'current'
+  showTotals?:  boolean
+  maxPoints?:   number
+}
 
-export default function PowerMonitorWidget({ devices, deviceStates }: WidgetProps) {
+const METRIC_COLOR: Record<string, string> = {
+  power:   'var(--color-chart-1)',
+  voltage: 'var(--color-chart-2)',
+  current: 'var(--color-chart-3)',
+}
+
+export default function PowerMonitorWidget({ devices, deviceStates, config }: WidgetProps) {
   const dataRef = useRef<DataPoint[]>([])
+  const cfg     = config.settings as PowerConfig
+
+  const showChart  = cfg.showChart   ?? true
+  const metric     = cfg.chartMetric ?? 'power'
+  const showTotals = cfg.showTotals  ?? true
+  const maxPts     = cfg.maxPoints   ?? 60
 
   const device = devices[0]
-  const state = deviceStates[0]
+  const state  = deviceStates[0]
   const energy = state?.energy
 
   useEffect(() => {
     if (!energy) return
-
     const point: DataPoint = {
       time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      power: energy.power,
+      power:   energy.power,
       voltage: energy.voltage,
       current: energy.current,
     }
-
-    dataRef.current = [...dataRef.current.slice(-(MAX_POINTS - 1)), point]
-  }, [energy?.power, energy?.voltage, energy?.current])
+    dataRef.current = [...dataRef.current.slice(-(maxPts - 1)), point]
+  }, [energy?.power, energy?.voltage, energy?.current, maxPts])
 
   if (!device || !state) {
-    return <div className="text-text-muted text-sm p-4">No device selected</div>
+    return <div className="text-muted-foreground text-sm p-4">No device selected</div>
   }
 
   return (
     <div className="h-full flex flex-col p-3">
       <div className="flex items-center gap-2 mb-2">
-        <Zap size={16} className="text-warning" />
-        <h4 className="text-sm font-medium text-text truncate">{device.friendlyName}</h4>
+        <Zap size={16} className="text-yellow-500 dark:text-yellow-400" />
+        <h4 className="text-sm font-medium truncate">{device.friendlyName}</h4>
       </div>
 
       {energy ? (
         <>
           <div className="grid grid-cols-3 gap-2 mb-3">
-            <ValueBox label="Power" value={`${energy.power}W`} color="text-warning" />
-            <ValueBox label="Voltage" value={`${energy.voltage}V`} color="text-success" />
-            <ValueBox label="Current" value={`${energy.current}A`} color="text-primary" />
+            <ValueBox label="Power"   value={`${energy.power}W`}   color="text-yellow-600 dark:text-yellow-400" active={metric === 'power'} />
+            <ValueBox label="Voltage" value={`${energy.voltage}V`} color="text-green-600 dark:text-green-400"  active={metric === 'voltage'} />
+            <ValueBox label="Current" value={`${energy.current}A`} color="text-primary"                        active={metric === 'current'} />
           </div>
 
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dataRef.current}>
-                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#5a6480' }} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 10, fill: '#5a6480' }} width={35} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#16213e', border: '1px solid #2a3a5c', borderRadius: 8, fontSize: 12 }}
-                  labelStyle={{ color: '#eaeaea' }}
-                />
-                <Line type="monotone" dataKey="power" stroke="#fbbf24" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {showChart && (
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dataRef.current}>
+                  <XAxis
+                    dataKey="time"
+                    tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                    width={35}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '6px',
+                      fontSize: 12,
+                    }}
+                    labelStyle={{ color: 'var(--foreground)' }}
+                    itemStyle={{ color: 'var(--muted-foreground)' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey={metric}
+                    stroke={METRIC_COLOR[metric]}
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
-          <div className="flex justify-between text-xs text-text-dim mt-1">
-            <span>Today: {energy.today} kWh</span>
-            <span>Total: {energy.total} kWh</span>
-          </div>
+          {showTotals && (
+            <div className="flex justify-between text-xs text-muted-foreground/70 mt-1">
+              <span>Today: {energy.today} kWh</span>
+              <span>Total: {energy.total} kWh</span>
+            </div>
+          )}
         </>
       ) : (
-        <div className="flex-1 flex items-center justify-center text-text-dim text-sm">
+        <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
           No energy data available
         </div>
       )}
@@ -79,11 +117,11 @@ export default function PowerMonitorWidget({ devices, deviceStates }: WidgetProp
   )
 }
 
-function ValueBox({ label, value, color }: { label: string; value: string; color: string }) {
+function ValueBox({ label, value, color, active }: { label: string; value: string; color: string; active: boolean }) {
   return (
-    <div className="bg-surface-hover rounded-md p-2 text-center">
+    <div className={`bg-muted rounded-md p-2 text-center ring-1 transition-all ${active ? 'ring-primary/40' : 'ring-transparent'}`}>
       <div className={`text-base font-bold ${color}`}>{value}</div>
-      <div className="text-[10px] text-text-dim">{label}</div>
+      <div className="text-[10px] text-muted-foreground/70">{label}</div>
     </div>
   )
 }

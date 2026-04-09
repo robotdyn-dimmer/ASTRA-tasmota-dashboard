@@ -11,7 +11,10 @@ widgetRegistry.register({
   configSchema: {
     type: 'object',
     properties: {
-      showLabel: { type: 'boolean', title: 'Show relay labels', default: true },
+      showLabel:      { type: 'boolean', title: 'Show relay labels', default: true },
+      showStatus:     { type: 'boolean', title: 'Show online status badge', default: true },
+      confirmToggle:  { type: 'boolean', title: 'Require confirmation before toggle', default: false },
+      compactLayout:  { type: 'boolean', title: 'Compact layout (icon only)', default: false },
     },
   },
   component: lazy(() => import('./RelayToggleWidget')),

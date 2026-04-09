@@ -34,11 +34,19 @@ export function buildSubscriptionTopics(deviceTopic: string): string[] {
 
 export function buildWildcardSubscriptions(): string[] {
   return [
+    // Online/offline detection — processed immediately (not buffered)
     `${MQTT_TOPIC_PREFIXES.TELEMETRY}/+/LWT`,
+    // Command responses — relay state after toggle/on/off
     `${MQTT_TOPIC_PREFIXES.STATUS}/+/RESULT`,
+    // Telemetry — periodic sensor + power readings
     `${MQTT_TOPIC_PREFIXES.TELEMETRY}/+/SENSOR`,
     `${MQTT_TOPIC_PREFIXES.TELEMETRY}/+/STATE`,
-    `${MQTT_TOPIC_PREFIXES.STATUS}/+/STATUS0`,
+    // Status response — full status from STATUS 0 command (MQTT format)
+    `${MQTT_TOPIC_PREFIXES.STATUS}/+/STATUS`,    // Status section only
+    `${MQTT_TOPIC_PREFIXES.STATUS}/+/STATUS0`,   // All sections combined
+    // Device info on startup/restart — friendlyName + IP address
+    `${MQTT_TOPIC_PREFIXES.TELEMETRY}/+/INFO1`,
+    `${MQTT_TOPIC_PREFIXES.TELEMETRY}/+/INFO2`,
   ]
 }
 
