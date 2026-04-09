@@ -69,15 +69,20 @@ function AppContent() {
       }
 
       // Step 3: Connect MQTT (credentials may have come from device)
+      // Wrapped in try/catch — MQTT is optional and fails on HTTPS→ws:// (Mixed Content)
       const settings = useSettingsStore.getState()
-      connect({
-        brokerUrl: settings.mqttBrokerUrl,
-        username: settings.mqttUsername || undefined,
-        password: settings.mqttPassword || undefined,
-      })
+      try {
+        connect({
+          brokerUrl: settings.mqttBrokerUrl,
+          username: settings.mqttUsername || undefined,
+          password: settings.mqttPassword || undefined,
+        })
+      } catch (e) {
+        console.warn('[bootstrap] MQTT connect failed (likely Mixed Content on HTTPS):', e)
+      }
 
       // Step 4: Initial poll — wait for device states, then show content
-      await pollScheduler.initialPoll()
+      await pollScheduler.initialPoll().catch(() => {})
       setDevicesReady(true)
 
       // Step 5: Start background services (skip initial poll — just did one)
