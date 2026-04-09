@@ -25,7 +25,7 @@ This enables the `Access-Control-Allow-Origin: *` header.
 
 The ASTRA-patched Tasmota firmware adds full CORS support including Private Network Access. Two lines were changed in `xdrv_01_9_webserver.ino`.
 
-> **Precompiled binary available.** A ready-to-flash `.bin` for ESP32 is available at [www.rocketcontroller.com](https://www.rocketcontroller.com). Flash it via Tasmota OTA update or `esptool.py` — no compilation needed.
+> **Precompiled binary available.** A ready-to-flash `.bin` for ESP32 is available in [GitHub Releases](https://github.com/robotdyn-dimmer/ASTRA-tasmota-dashboard/releases). Download `tasmota32-cors-patched.bin` and flash via Tasmota OTA update or `esptool.py` — no compilation needed.
 
 ### What the patch adds
 

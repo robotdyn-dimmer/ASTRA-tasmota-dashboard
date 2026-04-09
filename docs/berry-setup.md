@@ -28,7 +28,7 @@ The SSE script uses Berry's `tcpserver` on port 81 to stream device state change
 
 ## Files to Upload
 
-You need three Berry script files on the device filesystem:
+You need three Berry script files on the device filesystem. They are included in the [GitHub Release](https://github.com/robotdyn-dimmer/ASTRA-tasmota-dashboard/releases) and also available in the [`public/berry/`](https://github.com/robotdyn-dimmer/ASTRA-tasmota-dashboard/tree/main/public/berry) folder of the repository.
 
 ```
 astra_sse.be

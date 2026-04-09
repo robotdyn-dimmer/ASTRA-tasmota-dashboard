@@ -70,10 +70,18 @@ React 19 + TypeScript + Vite + Tailwind CSS v4 + shadcn/ui + Zustand + Recharts 
 
 Communication: HTTP (primary) + MQTT (optional) + SSE (real-time push via Berry)
 
+## Contributing & Feedback
+
+ASTRA is a free, open-source project. We don't charge for it and we don't plan to. The codebase is actively developed and optimized — yes, we use AI tools to help us move faster, and we're not ashamed of it.
+
+If you find a bug, have a feature request, or just want to share your experience — please [open an issue](https://github.com/robotdyn-dimmer/ASTRA-tasmota-dashboard/issues). We read every one of them and fix things quickly.
+
+Pull requests are welcome too.
+
 ## License
 
-MIT (TBD)
+MIT
 
 ---
 
-Built by the **RocketController** team
+Built by the **[RocketController](https://www.rocketcontroller.com)** team | [info@rocketcontroller.com](mailto:info@rocketcontroller.com)
