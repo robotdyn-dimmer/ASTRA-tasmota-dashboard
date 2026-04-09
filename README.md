@@ -30,6 +30,10 @@
 
 > **ESP32 only.** ESP8266 is not supported — Berry scripting (used for SSE push and config storage) is not available on ESP8266.
 
+### Pre-compiled Tasmota Firmware (optional)
+
+A CORS-patched Tasmota firmware for ESP32 is available in [Releases](https://github.com/robotdyn-dimmer/ASTRA-tasmota-dashboard/releases). It adds the `Access-Control-Allow-Private-Network` header required by Chrome 98+ for local network access. Flash via OTA update or esptool. Built from Tasmota development branch.
+
 ### Install and Run
 
 ```bash
@@ -39,7 +43,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser. The onboarding page will prompt you to enter your first device IP.
+Open `http://localhost:5173` in your browser and add your first device via **+ Add Device**.
 
 ### Production Build
 
