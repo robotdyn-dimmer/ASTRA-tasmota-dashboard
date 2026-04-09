@@ -20,6 +20,13 @@ export function AboutPage() {
           </p>
 
           <p className="text-sm leading-relaxed">
+            Try it online at{' '}
+            <a href="https://astra-app.rocketcontroller.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              astra-app.rocketcontroller.com
+            </a>
+          </p>
+
+          <p className="text-sm leading-relaxed">
             The project is under active development. We welcome your feedback,
             bug reports, feature requests, and contributions.
           </p>

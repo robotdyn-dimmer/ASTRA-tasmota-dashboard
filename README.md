@@ -4,7 +4,7 @@
 
 ![Status](https://img.shields.io/badge/status-v0.1.0--dev-orange) ![ESP32](https://img.shields.io/badge/platform-ESP32-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
-**Website:** [www.rocketcontroller.com](https://www.rocketcontroller.com)
+**Website:** [www.rocketcontroller.com](https://www.rocketcontroller.com) | **Live App:** [astra-app.rocketcontroller.com](https://astra-app.rocketcontroller.com)
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
@@ -34,7 +34,11 @@
 
 A CORS-patched Tasmota firmware for ESP32 is available in [Releases](https://github.com/robotdyn-dimmer/ASTRA-tasmota-dashboard/releases). It adds the `Access-Control-Allow-Private-Network` header required by Chrome 98+ for local network access. Flash via OTA update or esptool. Built from Tasmota development branch.
 
-### Install and Run
+### Try Online (no install needed)
+
+Open **[astra-app.rocketcontroller.com](https://astra-app.rocketcontroller.com)** in your browser, add your device IP, and start managing. Requires CORS-patched firmware on the device.
+
+### Install and Run Locally
 
 ```bash
 git clone https://github.com/robotdyn-dimmer/ASTRA-tasmota-dashboard.git
