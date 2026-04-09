@@ -28,7 +28,7 @@
 - **ESP32** with **Tasmota 14+** on the same network
 - CORS enabled on device (`SetOption120 1`) — see [CORS setup](docs/CORS-setup.md)
 
-> **ESP32 only.** ESP8266 is not supported — Berry scripting (used for SSE push and config storage) is not available on ESP8266.
+> **Currently ESP32 only.** ESP8266 support is under consideration — Berry scripting is not available on ESP8266, so we're exploring MQTT-based alternatives. Share your use case in [#1 — ESP8266 support](https://github.com/robotdyn-dimmer/ASTRA-tasmota-dashboard/issues/1) to help us prioritize.
 
 ### Pre-compiled Tasmota Firmware (optional)
 
