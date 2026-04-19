@@ -266,7 +266,7 @@ Toggle between **light** and **dark** mode using the theme button in the header.
 ### Device shows Offline
 
 1. Verify the device IP is correct — open `http://<device-ip>` in a browser tab
-2. Check CORS is enabled — run `SetOption120 1` in the Tasmota console
+2. Check CORS is enabled — run `Cors *` in the Tasmota console (or `Cors https://your-app-domain` for stricter security)
 3. Check your firewall is not blocking local network requests
 4. See [CORS Setup](CORS-setup.md) for Chrome Private Network Access issues
 
