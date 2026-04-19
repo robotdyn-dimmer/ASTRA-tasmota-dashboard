@@ -81,8 +81,13 @@ function AppContent() {
         console.warn('[bootstrap] MQTT connect failed (likely Mixed Content on HTTPS):', e)
       }
 
-      // Step 4: Initial poll — wait for device states, then show content
+      // Step 4: Initial poll — wait for device states (also fetches MAC for any devices missing it)
       await pollScheduler.initialPoll().catch(() => {})
+
+      // Step 4b: Cleanup duplicate device entries by MAC (e.g. after Pull from device)
+      const removed = useDeviceStore.getState().dedupeByMac()
+      if (removed > 0) console.log(`[bootstrap] removed ${removed} duplicate device(s) by MAC`)
+
       setDevicesReady(true)
 
       // Step 5: Start background services (skip initial poll — just did one)

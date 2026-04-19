@@ -21,6 +21,7 @@ interface PreviewDevice {
   firmware:     string
   hardware:     string
   ipAddress:    string
+  macAddress?:  string
 }
 
 const IP_REGEX = /^(\d{1,3}\.){3}\d{1,3}(:\d+)?(\/.*)?$|^localhost(:\d+)?(\/.*)?$/
@@ -33,7 +34,9 @@ export function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps) {
   const [preview, setPreview] = useState<PreviewDevice | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
 
-  const addDevice = useDeviceStore(s => s.addDevice)
+  const addDevice      = useDeviceStore(s => s.addDevice)
+  const updateDevice   = useDeviceStore(s => s.updateDevice)
+  const getDeviceByMac = useDeviceStore(s => s.getDeviceByMac)
 
   const resetForm = () => {
     setIpAddress('')
@@ -66,6 +69,7 @@ export function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps) {
         firmware:     parsed.firmwareVersion || 'Unknown',
         hardware:     parsed.hardware || 'Unknown',
         ipAddress:    ip,
+        macAddress:   parsed.macAddress,
       }
       setPreview(found)
       // Pre-fill name and topic from device if empty
@@ -86,16 +90,30 @@ export function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps) {
     const topic = mqttTopic.trim() || friendlyName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_')
     const name  = friendlyName.trim() || topic
 
-    addDevice({
-      mqttTopic:    topic,
-      friendlyName: name,
-      ipAddress:    ipAddress.trim() || undefined,
-      addedVia:     'manual',
-    })
+    // Check for existing device with same MAC — update instead of creating duplicate
+    const existing = preview?.macAddress ? getDeviceByMac(preview.macAddress) : undefined
+    if (existing) {
+      updateDevice(existing.id, {
+        ipAddress:    ipAddress.trim() || existing.ipAddress,
+        friendlyName: name,
+        mqttTopic:    topic,
+      })
+    } else {
+      addDevice({
+        mqttTopic:    topic,
+        friendlyName: name,
+        ipAddress:    ipAddress.trim() || undefined,
+        macAddress:   preview?.macAddress,
+        addedVia:     'manual',
+      })
+    }
 
     pollScheduler.refresh()
     handleClose()
   }
+
+  // Detect duplicate by MAC for UI hint
+  const duplicateDevice = preview?.macAddress ? getDeviceByMac(preview.macAddress) : undefined
 
   const isIpValid = IP_REGEX.test(ipAddress.trim())
 
@@ -150,6 +168,19 @@ export function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps) {
             </div>
           )}
 
+          {/* Duplicate warning by MAC */}
+          {duplicateDevice && (
+            <div className="flex items-start gap-2.5 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm">
+              <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-amber-700 dark:text-amber-300">Device already in your list</p>
+                <p className="text-muted-foreground text-xs">
+                  Same MAC as <span className="font-medium">{duplicateDevice.friendlyName}</span>. Submitting will update its IP/name instead of creating a duplicate.
+                </p>
+              </div>
+            </div>
+          )}
+
           {validation === 'error' && (
             <div className="flex items-start gap-2.5 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm">
               <AlertCircle size={16} className="text-destructive shrink-0 mt-0.5" />
@@ -193,7 +224,7 @@ export function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps) {
               disabled={!mqttTopic.trim() && !friendlyName.trim() && !ipAddress.trim()}
             >
               <Plus size={15} />
-              Add Device
+              {duplicateDevice ? 'Update Device' : 'Add Device'}
             </Button>
           </div>
         </form>

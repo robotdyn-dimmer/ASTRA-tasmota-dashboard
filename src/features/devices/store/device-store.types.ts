@@ -81,6 +81,10 @@ export interface DeviceStoreState {
   handleTelemetry: (mqttTopic: string, payload: Record<string, unknown>) => void
   handleStatResult: (mqttTopic: string, payload: Record<string, unknown>) => void
   getDeviceByTopic: (mqttTopic: string) => TasmotaDevice | undefined
+  /** Find a local device by MAC address (case-insensitive, separators stripped) */
+  getDeviceByMac: (mac: string) => TasmotaDevice | undefined
   /** Merge devices from hub config — adds missing, updates existing (preserves local runtime state) */
   mergeDevicesFromDevice: (devices: Record<string, TasmotaDevice>) => void
+  /** Cleanup: collapse devices with the same MAC address into one entry (keeps the most complete) */
+  dedupeByMac: () => number
 }

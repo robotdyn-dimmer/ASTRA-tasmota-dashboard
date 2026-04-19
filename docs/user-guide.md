@@ -240,6 +240,17 @@ When a config device is set, ASTRA auto-syncs every **2 seconds** when changes a
 
 Requires the `astra_config.be` Berry script on the target device (which registers the `/astra_app` endpoint) — see [Berry Setup](berry-setup.md).
 
+### Cross-browser sync without an ESP32 hub
+
+If your fleet is ESP8266 only, or you simply don't want to rely on a device for storage, you can sync your config across browsers using a cloud-synced folder.
+
+1. In **Settings → Config & Sync → Data**, click **Export config** — saves a JSON file with all devices, dashboards, and settings.
+2. Save the file inside a folder synced by **Google Drive**, **Dropbox**, **OneDrive**, **Yandex.Disk**, or any similar service.
+3. On another browser or device, open ASTRA and click **Import config** — pick the same file from your cloud folder.
+4. After making changes, repeat the export and overwrite the file. The next import on other browsers picks up the new state.
+
+This is a manual workflow — there's no auto-sync — but it requires no extra software or device-side scripts. Native MQTT-based cross-browser sync is on the roadmap (see [issue #1](https://github.com/robotdyn-dimmer/ASTRA-tasmota-dashboard/issues/1)).
+
 ### Theme
 
 Toggle between **light** and **dark** mode using the theme button in the header.
