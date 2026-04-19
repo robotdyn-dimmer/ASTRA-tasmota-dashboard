@@ -208,14 +208,11 @@ class TasmotaHttpClient {
     const timer = setTimeout(() => controller.abort(), 5000)
     try {
       const res = await fetch(url, { signal: controller.signal })
-      console.log('[getAppConfig] status:', res.status, 'ok:', res.ok, 'url:', url)
       if (!res.ok) return null
       const data = await res.json()
-      console.log('[getAppConfig] data:', data, 'savedAt type:', typeof data.savedAt)
       if (typeof data.savedAt !== 'number') return null
       return data as AppConfig
-    } catch (err) {
-      console.error('[getAppConfig] error:', err)
+    } catch {
       return null
     } finally {
       clearTimeout(timer)
