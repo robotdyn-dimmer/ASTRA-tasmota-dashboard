@@ -150,15 +150,12 @@ class TasmotaHttpClient {
     }
   }
 
-  /** POST /astra_cfg — save Berry config */
+  /** POST /astra_cfg — save Berry config.
+   *  No Content-Type header → simple request, no CORS preflight (works with stock Tasmota Cors). */
   async saveAstraConfig(ip: string, config: Record<string, unknown>): Promise<boolean> {
     const url = this.buildDeviceUrl(ip, '/astra_cfg')
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-      })
+      const res = await fetch(url, { method: 'POST', body: JSON.stringify(config) })
       const json = await res.json()
       return json.ok === true
     } catch {
@@ -191,15 +188,12 @@ class TasmotaHttpClient {
   /**
    * POST /astra_dash — push dashboard config to Berry device for cross-browser sync.
    * Silent on failure — localStorage is always the source of truth.
+   * No Content-Type header → simple request, no CORS preflight.
    */
   async saveDashboardConfig(ip: string, payload: DashboardSyncPayload): Promise<boolean> {
     const url = this.buildDeviceUrl(ip, '/astra_dash')
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) })
       const json = await res.json()
       return json.ok === true
     } catch {
@@ -228,15 +222,12 @@ class TasmotaHttpClient {
     }
   }
 
-  /** POST /astra_app — push full app config to hub device */
+  /** POST /astra_app — push full app config to hub device.
+   *  No Content-Type header → simple request, no CORS preflight (works with stock Tasmota Cors). */
   async saveAppConfig(ip: string, config: AppConfig): Promise<boolean> {
     const url = this.buildDeviceUrl(ip, '/astra_app')
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-      })
+      const res = await fetch(url, { method: 'POST', body: JSON.stringify(config) })
       const json = await res.json()
       return json.ok === true
     } catch {
